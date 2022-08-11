@@ -102,19 +102,12 @@ optional arguments:
 ```
 @misc{https://doi.org/10.48550/arxiv.2208.00755,
   doi = {10.48550/ARXIV.2208.00755},
-  
   url = {https://arxiv.org/abs/2208.00755},
-  
   author = {Saglam, Baturay and Cicek, Dogan C. and Mutlu, Furkan B. and Kozat, Suleyman S.},
-  
   keywords = {Machine Learning (cs.LG), Artificial Intelligence (cs.AI), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  
   title = {Off-Policy Correction for Actor-Critic Algorithms in Deep Reinforcement Learning},
-  
   publisher = {arXiv},
-  
   year = {2022},
-  
   copyright = {arXiv.org perpetual, non-exclusive license}
 }
 ```
