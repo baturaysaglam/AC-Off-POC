@@ -1,4 +1,4 @@
-# Off-Policy Correction for Actor-Critic Algorithms in Deep Reinforcement Learning
+# Off-Policy Correction for Actor-Critic Methods without Importance Sampling
 PyTorch implementation of the _Actor-Critic Off-Policy Correction_ algorithm (AC-Off-POC). If you use our code or data, please cite the [paper](https://arxiv.org/abs/2208.00755).
 
 Note that the implementation of the [DDPG](https://arxiv.org/abs/1509.02971) and [TD3](https://arxiv.org/abs/1802.09477) algorithms are heavily based on the [author's Pytorch implementation of the TD3 algorithm](https://github.com/sfujim/TD3). 
@@ -105,7 +105,7 @@ optional arguments:
   url = {https://arxiv.org/abs/2208.00755},
   author = {Saglam, Baturay and Cicek, Dogan C. and Mutlu, Furkan B. and Kozat, Suleyman S.},
   keywords = {Machine Learning (cs.LG), Artificial Intelligence (cs.AI), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  title = {Off-Policy Correction for Actor-Critic Algorithms in Deep Reinforcement Learning},
+  title = {Off-Policy Correction for Actor-Critic Methods without Importance Sampling},
   publisher = {arXiv},
   year = {2022},
   copyright = {arXiv.org perpetual, non-exclusive license}
