@@ -157,7 +157,7 @@ class AC_Off_POC_SAC(object):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
 
         if evaluate:
-            _, _, _, mean, _ = self.actor.sample(state)
+            _, _, mean, _, _ = self.actor.sample(state)
 
             mean = mean.detach().cpu().numpy()[0]
 
