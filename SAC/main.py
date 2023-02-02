@@ -88,41 +88,22 @@ parser.add_argument('--policy', default="AC-Off-POC_SAC", help='Algorithm (defau
 parser.add_argument('--env', default="LunarLanderContinuous-v2", help='OpenAI Gym environment name')
 parser.add_argument('--seed', type=int, default=0, help='Seed number for PyTorch, NumPy and OpenAI Gym (default: 0)')
 parser.add_argument('--gpu', type=int, default=0, help='GPU ordinal for multi-GPU computers (default: 0)')
-parser.add_argument('--start_steps', type=int, default=0, metavar='N',
-                    help='Number of exploration time steps sampling random actions (default: 1000)')
-parser.add_argument('--off_poc_update_start_steps', type=int, default=5, metavar='N',
-                    help='Multiple of exploration time steps to start AC-Off_POC updates (default: 50)')
-parser.add_argument('--buffer_size', type=int, default=1000000, help='Size of the experience replay buffer (default: '
-                                                                     '1000000)')
-parser.add_argument('--eval_freq', type=int, default=1000, metavar='N', help='evaluation period in number of time '
-                                                                             'steps (default: 1000)')
-parser.add_argument('--num_steps', type=int, default=1000000, metavar='N',
-                    help='Maximum number of steps (default: 1000000)')
-parser.add_argument('--batch_size', type=int, default=256, metavar='N',
-                    help='Batch size (default: 256)')
-parser.add_argument('--kl_div_var', type=float, default=0.15, help='Diagonal entries of the reference Gaussian for '
-                                                                   'the Deterministic SAC')
-parser.add_argument('--hard_update', type=bool, default=True, metavar='G', help='Hard update the target networks ('
-                                                                                'default: True)')
-parser.add_argument('--updates_per_step', type=int, default=4, metavar='N',
-                    help='Model updates per training time step (default: 1)')
-parser.add_argument('--target_update_interval', type=int, default=1, metavar='N',
-                    help='Number of critic function updates per training time step (default: 1)')
-parser.add_argument('--alpha', type=float, default=0.2, metavar='G',
-                    help='Temperature parameter α determines the relative importance of the entropy\
-                            term against the reward (default: 0.2)')
-parser.add_argument('--automatic_entropy_tuning', type=bool, default=False, metavar='G',
-                    help='Automatically adjust α (default: False)')
-parser.add_argument('--reward_scale', type=float, default=5.0, metavar='N', help='Scale of the environment rewards ('
-                                                                                 'default: 5)')
-parser.add_argument('--gamma', type=float, default=0.99, metavar='G',
-                    help='Discount factor for reward (default: 0.99)')
-parser.add_argument('--tau', type=float, default=0.005, metavar='G',
-                    help='Learning rate in soft/hard updates of the target networks (default: 0.005)')
-parser.add_argument('--lr', type=float, default=0.0003, metavar='G',
-                    help='Learning rate (default: 0.0003)')
-parser.add_argument('--hidden_size', type=int, default=256, metavar='N',
-                    help='Hidden unit size in neural networks (default: 256)')
+parser.add_argument('--start_steps', type=int, default=0, metavar='N', help='Number of exploration time steps sampling random actions (default: 1000)')
+parser.add_argument('--off_poc_update_start_steps', type=int, default=5, metavar='N', help='Multiple of exploration time steps to start AC-Off_POC updates (default: 50)')
+parser.add_argument('--buffer_size', type=int, default=1000000, help='Size of the experience replay buffer (default: 1000000)')
+parser.add_argument('--eval_freq', type=int, default=1000, metavar='N', help='evaluation period in number of time steps (default: 1000)')
+parser.add_argument('--num_steps', type=int, default=1000000, metavar='N', help='Maximum number of steps (default: 1000000)')
+parser.add_argument('--batch_size', type=int, default=256, metavar='N', help='Batch size (default: 256)')
+parser.add_argument('--hard_update', type=bool, default=True, metavar='G', help='Hard update the target networks (default: True)')
+parser.add_argument('--updates_per_step', type=int, default=4, metavar='N', help='Model updates per training time step (default: 1)')
+parser.add_argument('--target_update_interval', type=int, default=1, metavar='N', help='Number of critic function updates per training time step (default: 1)')
+parser.add_argument('--alpha', type=float, default=0.2, metavar='G', help='Temperature parameter α determines the relative importance of the entropy term against the reward (default: 0.2)')
+parser.add_argument('--automatic_entropy_tuning', type=bool, default=False, metavar='G', help='Automatically adjust α (default: False)')
+parser.add_argument('--reward_scale', type=float, default=5.0, metavar='N', help='Scale of the environment rewards (default: 5)')
+parser.add_argument('--gamma', type=float, default=0.99, metavar='G', help='Discount factor for reward (default: 0.99)')
+parser.add_argument('--tau', type=float, default=0.005, metavar='G', help='Learning rate in soft/hard updates of the target networks (default: 0.005)')
+parser.add_argument('--lr', type=float, default=0.0003, metavar='G', help='Learning rate (default: 0.0003)')
+parser.add_argument('--hidden_size', type=int, default=256, metavar='N', help='Hidden unit size in neural networks (default: 256)')
 
 args = parser.parse_args()
 
