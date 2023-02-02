@@ -37,31 +37,20 @@ def evaluate_policy(agent, env_name, seed, eval_episodes=10):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--policy", default="AC-Off-POC_DDPG", help='Algorithm (default: AC-Off-POC_DDPG)')
-    parser.add_argument("--env", default="Hopper-v2", help='OpenAI Gym environment name')
-    parser.add_argument("--seed", default=0, type=int,
-                        help='Seed number for PyTorch, NumPy and OpenAI Gym (default: 0)')
+    parser.add_argument("--policy", default="AC-Off-POC_TD3", help='Algorithm (default: AC-Off-POC_TD3)')
+    parser.add_argument("--env", default="LunarLanderContinuous-v2", help='OpenAI Gym environment name')
+    parser.add_argument("--seed", default=0, type=int, help='Seed number for PyTorch, NumPy and OpenAI Gym (default: 0)')
     parser.add_argument("--gpu", default="0", type=int, help='GPU ordinal for multi-GPU computers (default: 0)')
-    parser.add_argument("--start_time_steps", default=25000, type=int, metavar='N',
-                        help='Number of exploration time steps sampling random actions (default: 1000)')
-    parser.add_argument("--buffer_size", default=1000000, type=int,
-                        help='Size of the experience replay buffer (default: '
-                             '1000000)')
-    parser.add_argument("--eval_freq", default=1e3, metavar='N', help='Evaluation period in number of time '
-                                                                      'steps (default: 1000)')
-    parser.add_argument("--max_time_steps", default=1000000, type=int, metavar='N',
-                        help='Maximum number of steps (default: 1000000)')
+    parser.add_argument("--start_time_steps", default=25000, type=int, metavar='N', help='Number of exploration time steps sampling random actions (default: 1000)')
+    parser.add_argument("--buffer_size", default=1000000, type=int, help='Size of the experience replay buffer (default: 1000000)')
+    parser.add_argument("--eval_freq", default=1e3, metavar='N', help='Evaluation period in number of time steps (default: 1000)')
+    parser.add_argument("--max_time_steps", default=1000000, type=int, metavar='N', help='Maximum number of steps (default: 1000000)')
     parser.add_argument("--exploration_noise", default=0.1, metavar='G', help='Std of Gaussian exploration noise')
-    parser.add_argument("--batch_size", default=256, metavar='N',
-                        help='Batch size (default: 256)')
-    parser.add_argument('--kl_div_var', type=float, default=0.15, help='Diagonal entries of the reference Gaussian for '
-                                                                       'the Deterministic SAC')
-    parser.add_argument("--discount", default=0.99, metavar='G',
-                        help='Discount factor for reward (default: 0.99)')
-    parser.add_argument("--tau", default=0.005, type=float, metavar='G',
-                        help='Learning rate in soft/hard updates of the target networks (default: 0.005)')
-    parser.add_argument("--policy_noise", default=0.2, metavar='G', help='Noise added to target policy during critic '
-                                                                         'update')
+    parser.add_argument("--batch_size", default=256, metavar='N', help='Batch size (default: 256)')
+    parser.add_argument('--kl_div_var', type=float, default=0.15, help='Diagonal entries of the reference Gaussian for the Deterministic SAC')
+    parser.add_argument("--discount", default=0.99, metavar='G', help='Discount factor for reward (default: 0.99)')
+    parser.add_argument("--tau", default=0.005, type=float, metavar='G', help='Learning rate in soft/hard updates of the target networks (default: 0.005)')
+    parser.add_argument("--policy_noise", default=0.2, metavar='G', help='Noise added to target policy during critic update')
     parser.add_argument("--noise_clip", default=0.5, metavar='G', help='Range to clip target policy noise')
     parser.add_argument("--policy_freq", default=2, type=int, metavar='N', help='Frequency of delayed policy updates')
     parser.add_argument("--save_model", action="store_true", help='Save model and optimizer parameters')
@@ -75,7 +64,7 @@ if __name__ == "__main__":
     print("---------------------------------------")
 
     if "DDPG" in args.policy:
-        args.batch_size = 64
+        args.start_time_steps = 1000
         args.tau = 0.001
 
     if not os.path.exists("./results"):
@@ -170,7 +159,8 @@ if __name__ == "__main__":
             agent.update_parameters(replay_buffer, args.batch_size)
 
         if done:
-            print(f"Total T: {t + 1} Episode Num: {episode_num + 1} Episode T: {episode_time_steps} Reward: {episode_reward:.3f}")
+            print(
+                f"Total T: {t + 1} Episode Num: {episode_num + 1} Episode T: {episode_time_steps} Reward: {episode_reward:.3f}")
             # Reset environment
             state, done = env.reset(), False
             episode_reward = 0

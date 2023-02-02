@@ -146,18 +146,18 @@ class AC_Off_POC_TD3(object):
 
             multivar_gaussian = MultivariateNormal(mean, cov)
 
-            kl_div = (kl_divergence(multivar_gaussian, self.ref_gaussian) + kl_divergence(self.ref_gaussian,
+            js_div = (kl_divergence(multivar_gaussian, self.ref_gaussian) + kl_divergence(self.ref_gaussian,
                                                                                           multivar_gaussian)) / 2
 
-            kl_div = torch.exp(-kl_div)
+            js_div = torch.exp(-js_div)
 
-            kl_weights = kl_div
+            js_weights = js_div.item() * torch.ones_like(reward).to(device)
         except:
-            kl_weights = 0
+            js_weights = torch.ones_like(reward).to(device)
 
         # Compute the critic loss
-        critic_loss = torch.sum(kl_weights * (F.mse_loss(current_Q1, target_Q, reduction='none') +
-                                              F.mse_loss(current_Q2, target_Q, reduction='none'))) / torch.sum(kl_weights)
+        critic_loss = torch.sum(js_weights * (F.mse_loss(current_Q1, target_Q, reduction='none') +
+                                              F.mse_loss(current_Q2, target_Q, reduction='none'))) / torch.sum(js_weights)
 
         # Optimize the critic
         self.critic_optimizer.zero_grad()
@@ -168,7 +168,7 @@ class AC_Off_POC_TD3(object):
         if self.total_it % self.policy_freq == 0:
 
             # Compute the actor loss
-            actor_loss = -(kl_weights * self.critic.Q1(state, self.actor(state))).sum() / torch.sum(kl_weights)
+            actor_loss = -(js_weights * self.critic.Q1(state, self.actor(state))).sum() / torch.sum(js_weights)
 
             # Optimize the actor
             self.actor_optimizer.zero_grad()
