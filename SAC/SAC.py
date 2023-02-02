@@ -142,8 +142,7 @@ class SAC(object):
             self.log_alpha = torch.zeros(1, requires_grad=True, device=self.device)
             self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
 
-        self.actor = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space)\
-            .to(self.device)
+        self.actor = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, action_space).to(self.device)
         self.actor_optimizer = Adam(self.actor.parameters(), lr=args.lr)
 
     def select_action(self, state, evaluate=False):
@@ -157,12 +156,6 @@ class SAC(object):
     def update_parameters(self, memory, batch_size, updates):
         # Sample from the experience replay buffer
         state_batch, action_batch, reward_batch, next_state_batch, mask_batch = memory.sample(batch_size=batch_size)
-
-        state_batch = torch.FloatTensor(state_batch).to(self.device)
-        next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
-        action_batch = torch.FloatTensor(action_batch).to(self.device)
-        reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
-        mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
 
         with torch.no_grad():
             # Select the target smoothing regularized action according to policy

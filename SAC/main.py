@@ -45,7 +45,7 @@ def hyper_parameter_dict(args):
             args.updates_per_step = 4
 
     if args.env == "Ant-v2" or args.env == "HalfCheetah-v2" or args.env == "LunarLanderContinuous-v2" or args.env == "BipedalWalker-v3":
-        args.start_steps = 10000
+        args.start_steps = 10
 
     return args
 
@@ -88,7 +88,7 @@ parser.add_argument('--policy', default="AC-Off-POC_SAC", help='Algorithm (defau
 parser.add_argument('--env', default="LunarLanderContinuous-v2", help='OpenAI Gym environment name')
 parser.add_argument('--seed', type=int, default=0, help='Seed number for PyTorch, NumPy and OpenAI Gym (default: 0)')
 parser.add_argument('--gpu', type=int, default=0, help='GPU ordinal for multi-GPU computers (default: 0)')
-parser.add_argument('--start_steps', type=int, default=0, metavar='N', help='Number of exploration time steps sampling random actions (default: 1000)')
+parser.add_argument('--start_steps', type=int, default=1000, metavar='N', help='Number of exploration time steps sampling random actions (default: 1000)')
 parser.add_argument('--off_poc_update_start_steps', type=int, default=5, metavar='N', help='Multiple of exploration time steps to start AC-Off_POC updates (default: 50)')
 parser.add_argument('--buffer_size', type=int, default=1000000, help='Size of the experience replay buffer (default: 1000000)')
 parser.add_argument('--eval_freq', type=int, default=1000, metavar='N', help='evaluation period in number of time steps (default: 1000)')
@@ -150,12 +150,12 @@ print("---------------------------------------")
 print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
 print("---------------------------------------")
 
-is_off_poc = True if args.policy == "AC-Off-POC_SAC" else False
-off_poc_update = True
-
 # Memory
-memory = ParameterExperienceReplayBuffer(args.buffer_size, args.seed) if off_poc_update \
-    else ExperienceReplayBuffer(args.buffer_size, args.seed)
+memory = ExperienceReplayBuffer(env.observation_space.shape[0], env.action_space.shape[0], max_size=args.buffer_size) if args.policy == "SAC" \
+    else ParameterExperienceReplayBuffer(env.observation_space.shape[0], env.action_space.shape[0], max_size=args.buffer_size)
+
+is_off_poc = True if args.policy == "AC-Off-POC_SAC" else False
+off_poc_update = False
 
 # Training Loop
 total_numsteps = 0
@@ -172,15 +172,17 @@ for i_episode in itertools.count(1):
     state = env.reset()
 
     while not done:
-        action = agent.select_action(state, evaluate=False)
+        if args.start_steps > total_numsteps:
+            action = env.action_space.sample()
+            action_prob = None
+            mean, std = torch.zeros_like(torch.from_numpy(action)), torch.zeros_like(torch.from_numpy(action))
+        else:
+            action = agent.select_action(state, evaluate=False)
 
-        if is_off_poc:
-            try:
+            if is_off_poc:
                 action, action_prob, mean, std = action
-            except:
-                print("here")
 
-        if len(memory) > args.batch_size and total_numsteps >= args.start_steps:
+        if len(memory) > args.batch_size and args.start_steps <= total_numsteps:
             for i in range(args.updates_per_step):
                 agent.update_parameters(memory, args.batch_size, updates, off_poc_update) if is_off_poc \
                     else agent.update_parameters(memory, args.batch_size, updates)
@@ -204,12 +206,10 @@ for i_episode in itertools.count(1):
             evaluations.append(evaluate_policy(agent, args.env, args.seed))
             np.save(f"./results/{file_name}", evaluations)
 
-        if total_numsteps == args.off_poc_update_start_steps * args.start_steps:
+        if is_off_poc and total_numsteps == args.off_poc_update_start_steps * args.start_steps:
             off_poc_update = True
 
-            memory.buffer = memory.buffer[args.start_steps:]
-            memory.ptr -= args.start_steps
-            memory.capacity -= args.start_steps
+            memory.remove(args.start_steps)
 
     if total_numsteps > args.num_steps:
         break

@@ -148,11 +148,6 @@ class AC_Off_POC_SAC(object):
         self.actor = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, self.device, action_space).to(self.device)
         self.actor_optimizer = Adam(self.actor.parameters(), lr=args.lr)
 
-        self.kl_div_var = args.kl_div_var
-
-        self.ref_gaussian = MultivariateNormal(torch.zeros(action_space.shape[0]).to(self.device),
-                                               torch.eye(action_space.shape[0]).to(self.device) * self.kl_div_var)
-
     def select_action(self, state, evaluate=False):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
 
@@ -175,18 +170,18 @@ class AC_Off_POC_SAC(object):
         # Sample from the experience replay buffer
         state_batch, action_batch, action_prob_batch, reward_batch, next_state_batch, mask_batch, mean_batch, std_batch = memory.sample(batch_size=batch_size)
 
-        state_batch = torch.FloatTensor(state_batch).to(self.device)
-        next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
-        action_batch = torch.FloatTensor(action_batch).to(self.device)
-        action_prob_batch = torch.FloatTensor(action_prob_batch).to(self.device)
-        reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
-        mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
+        # state_batch = torch.FloatTensor(state_batch).to(self.device)
+        # next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
+        # action_batch = torch.FloatTensor(action_batch).to(self.device)
+        # action_prob_batch = torch.FloatTensor(action_prob_batch).to(self.device)
+        # reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
+        # mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
 
         if off_poc_update:
             # Compute JS-Divergence weights
             try:
-                mean_batch = torch.FloatTensor(mean_batch).to(self.device)
-                std_batch = torch.FloatTensor(std_batch).to(self.device)
+                # mean_batch = torch.FloatTensor(mean_batch).to(self.device)
+                # std_batch = torch.FloatTensor(std_batch).to(self.device)
 
                 with torch.no_grad():
                     _, log_prob, _, mean, std = self.actor.sample(state_batch)
