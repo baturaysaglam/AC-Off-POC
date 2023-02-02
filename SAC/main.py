@@ -52,7 +52,7 @@ def hyper_parameter_dict(args):
 
 # Runs policy for X episodes and returns average reward
 # A fixed seed is used for the eval environment
-def evaluate_policy(agent, env_name, seed, is_off_poc, eval_episodes=10):
+def evaluate_policy(agent, env_name, seed, eval_episodes=10):
     eval_env = gym.make(env_name)
     eval_env.seed(seed + 100)
 
@@ -64,10 +64,7 @@ def evaluate_policy(agent, env_name, seed, is_off_poc, eval_episodes=10):
         episode_reward = 0
         done = False
         while not done:
-            if is_off_poc:
-                action, mean, std = agent.select_action(state, evaluate=True)
-            else:
-                action = agent.select_action(state, evaluate=True)
+            action = agent.select_action(state, evaluate=True)
 
             next_state, reward, done, _ = eval_env.step(action)
             episode_reward += reward
@@ -88,12 +85,10 @@ def evaluate_policy(agent, env_name, seed, is_off_poc, eval_episodes=10):
 parser = argparse.ArgumentParser(description='Soft Actor-Critic')
 
 parser.add_argument('--policy', default="AC-Off-POC_SAC", help='Algorithm (default: AC-Off-POC_SAC)')
-parser.add_argument('--policy_type', default="Gaussian",
-                    help='Policy Type: Gaussian | Deterministic (default: Gaussian)')
-parser.add_argument('--env', default="Hopper-v2", help='OpenAI Gym environment name')
+parser.add_argument('--env', default="LunarLanderContinuous-v2", help='OpenAI Gym environment name')
 parser.add_argument('--seed', type=int, default=0, help='Seed number for PyTorch, NumPy and OpenAI Gym (default: 0)')
 parser.add_argument('--gpu', type=int, default=0, help='GPU ordinal for multi-GPU computers (default: 0)')
-parser.add_argument('--start_steps', type=int, default=1000, metavar='N',
+parser.add_argument('--start_steps', type=int, default=0, metavar='N',
                     help='Number of exploration time steps sampling random actions (default: 1000)')
 parser.add_argument('--off_poc_update_start_steps', type=int, default=5, metavar='N',
                     help='Multiple of exploration time steps to start AC-Off_POC updates (default: 50)')
@@ -137,8 +132,6 @@ args = hyper_parameter_dict(args)
 # Target update specific parameters
 print(f"\nEnvironment: {args.env}\n")
 
-print(f"Policy type: {args.policy_type}\n")
-
 if args.hard_update:
     print(f"Update: HARD\n")
 else:
@@ -176,12 +169,12 @@ print("---------------------------------------")
 print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
 print("---------------------------------------")
 
-# Memory
-memory = ExperienceReplayBuffer(args.buffer_size, args.seed) if args.policy == "SAC" \
-    else ParameterExperienceReplayBuffer(args.buffer_size, args.seed)
-
 is_off_poc = True if args.policy == "AC-Off-POC_SAC" else False
-off_poc_update = False
+off_poc_update = True
+
+# Memory
+memory = ParameterExperienceReplayBuffer(args.buffer_size, args.seed) if off_poc_update \
+    else ExperienceReplayBuffer(args.buffer_size, args.seed)
 
 # Training Loop
 total_numsteps = 0
@@ -189,7 +182,7 @@ updates = 0
 
 # Evaluate untrained policy
 evaluations = [f"HOST: {socket.gethostname()}", f"GPU: {torch.cuda.get_device_name(args.gpu)}",
-               evaluate_policy(agent, args.env, args.seed, is_off_poc)]
+               evaluate_policy(agent, args.env, args.seed)]
 
 for i_episode in itertools.count(1):
     episode_reward = 0
@@ -198,17 +191,15 @@ for i_episode in itertools.count(1):
     state = env.reset()
 
     while not done:
-        if args.start_steps > total_numsteps:
-            action = env.action_space.sample()
+        action = agent.select_action(state, evaluate=False)
 
-            mean, std = torch.zeros_like(torch.from_numpy(action)), torch.zeros_like(torch.from_numpy(action))
-        else:
-            action = agent.select_action(state, evaluate=False)
+        if is_off_poc:
+            try:
+                action, action_prob, mean, std = action
+            except:
+                print("here")
 
-            if is_off_poc:
-                action, mean, std = action
-
-        if len(memory) > args.batch_size:
+        if len(memory) > args.batch_size and total_numsteps >= args.start_steps:
             for i in range(args.updates_per_step):
                 agent.update_parameters(memory, args.batch_size, updates, off_poc_update) if is_off_poc \
                     else agent.update_parameters(memory, args.batch_size, updates)
@@ -223,13 +214,13 @@ for i_episode in itertools.count(1):
 
         mask = 1 if episode_steps == env._max_episode_steps else float(not done)
 
-        memory.add(state, action, reward, next_state, mask, mean, std) if is_off_poc \
+        memory.add(state, action, action_prob, reward, next_state, mask, mean, std) if is_off_poc \
             else memory.add(state, action, reward, next_state, mask)
 
         state = next_state
 
         if total_numsteps % args.eval_freq == 0:
-            evaluations.append(evaluate_policy(agent, args.env, args.seed, is_off_poc))
+            evaluations.append(evaluate_policy(agent, args.env, args.seed))
             np.save(f"./results/{file_name}", evaluations)
 
         if total_numsteps == args.off_poc_update_start_steps * args.start_steps:

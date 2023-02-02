@@ -122,56 +122,12 @@ class GaussianPolicy(nn.Module):
         return super(GaussianPolicy, self).to(device)
 
 
-class DeterministicPolicy(nn.Module):
-    def __init__(self, num_inputs, num_actions, hidden_dim, device, action_space=None):
-        super(DeterministicPolicy, self).__init__()
-        self.device = device
-
-        self.linear1 = nn.Linear(num_inputs, hidden_dim)
-        self.linear2 = nn.Linear(hidden_dim, hidden_dim)
-
-        self.mean = nn.Linear(hidden_dim, num_actions)
-        self.noise = torch.Tensor(num_actions).to(self.device)
-
-        self.apply(weights_init_)
-
-        # action rescaling
-        if action_space is None:
-            self.action_scale = 1.
-            self.action_bias = 0.
-        else:
-            self.action_scale = torch.FloatTensor(
-                (action_space.high - action_space.low) / 2.).to(self.device)
-            self.action_bias = torch.FloatTensor(
-                (action_space.high + action_space.low) / 2.).to(self.device)
-
-    def forward(self, state):
-        x = F.relu(self.linear1(state))
-        x = F.relu(self.linear2(x))
-        mean = torch.tanh(self.mean(x)) * self.action_scale + self.action_bias
-        return mean
-
-    def sample(self, state):
-        mean = self.forward(state)
-        noise = self.noise.normal_(0., std=0.1)
-        noise = noise.clamp(-0.25, 0.25)
-        action = mean + noise
-        return action, torch.tensor(0.).to(self.device), mean, None, None
-
-    def to(self, device):
-        self.action_scale = self.action_scale.to(device)
-        self.action_bias = self.action_bias.to(device)
-        self.noise = self.noise.to(device)
-        return super(DeterministicPolicy, self).to(device)
-
-
 class AC_Off_POC_SAC(object):
     def __init__(self, num_inputs, action_space, args, device):
         self.gamma = args.gamma
         self.tau = args.tau
         self.alpha = args.alpha
 
-        self.policy_type = args.policy_type
         self.target_update_interval = args.target_update_interval
         self.automatic_entropy_tuning = args.automatic_entropy_tuning
 
@@ -183,20 +139,14 @@ class AC_Off_POC_SAC(object):
         self.critic_target = Critic(num_inputs, action_space.shape[0], args.hidden_size).to(self.device)
         hard_update(self.critic_target, self.critic)
 
-        if self.policy_type == "Gaussian":
-            # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
-            if self.automatic_entropy_tuning is True:
-                self.target_entropy = -torch.prod(torch.Tensor(action_space.shape)).to(self.device).item()
-                self.log_alpha = torch.zeros(1, requires_grad=True).to(self.device)
-                self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
+        # Target Entropy = −dim(A) (e.g. , -6 for HalfCheetah-v2) as given in the paper
+        if self.automatic_entropy_tuning is True:
+            self.target_entropy = -torch.prod(torch.Tensor(action_space.shape)).to(self.device).item()
+            self.log_alpha = torch.zeros(1, requires_grad=True).to(self.device)
+            self.alpha_optim = Adam([self.log_alpha], lr=args.lr)
 
-            self.actor = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, self.device, action_space).to(self.device)
-            self.actor_optimizer = Adam(self.actor.parameters(), lr=args.lr)
-        elif self.policy_type == "Deterministic":
-            self.alpha = 0
-            self.automatic_entropy_tuning = False
-            self.actor = DeterministicPolicy(num_inputs, action_space.shape[0], args.hidden_size, self.device, action_space).to(self.device)
-            self.actor_optimizer = Adam(self.actor.parameters(), lr=args.lr)
+        self.actor = GaussianPolicy(num_inputs, action_space.shape[0], args.hidden_size, self.device, action_space).to(self.device)
+        self.actor_optimizer = Adam(self.actor.parameters(), lr=args.lr)
 
         self.kl_div_var = args.kl_div_var
 
@@ -207,63 +157,50 @@ class AC_Off_POC_SAC(object):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
 
         if evaluate:
-                _, _, action, mean, std = self.actor.sample(state)
-        else:
-            action, _, _, mean, std = self.actor.sample(state)
+            _, _, _, mean, _ = self.actor.sample(state)
 
-        if self.policy_type == "Gaussian":
+            mean = mean.detach().cpu().numpy()[0]
+
+            return mean
+        else:
+            action, log_prob, _, mean, std = self.actor.sample(state)
+
+            action = action.detach().cpu().numpy()[0]
+            action_prob = log_prob.exp().detach().cpu().numpy()[0]
             mean, std = mean.detach().cpu().numpy()[0], std.detach().cpu().numpy()[0]
 
-        return action.detach().cpu().numpy()[0], mean, std
+            return action, action_prob, mean, std
 
     def update_parameters(self, memory, batch_size, updates, off_poc_update):
         # Sample from the experience replay buffer
-        state_batch, action_batch, reward_batch, next_state_batch, mask_batch, mean_batch, std_batch = memory.sample(batch_size=batch_size)
+        state_batch, action_batch, action_prob_batch, reward_batch, next_state_batch, mask_batch, mean_batch, std_batch = memory.sample(batch_size=batch_size)
 
         state_batch = torch.FloatTensor(state_batch).to(self.device)
         next_state_batch = torch.FloatTensor(next_state_batch).to(self.device)
         action_batch = torch.FloatTensor(action_batch).to(self.device)
+        action_prob_batch = torch.FloatTensor(action_prob_batch).to(self.device)
         reward_batch = torch.FloatTensor(reward_batch).to(self.device).unsqueeze(1)
         mask_batch = torch.FloatTensor(mask_batch).to(self.device).unsqueeze(1)
 
         if off_poc_update:
-            if self.policy_type == "Gaussian":
+            # Compute JS-Divergence weights
+            try:
                 mean_batch = torch.FloatTensor(mean_batch).to(self.device)
                 std_batch = torch.FloatTensor(std_batch).to(self.device)
 
-            # Compute JS-Divergence weights
-            try:
-                if self.policy_type == "Gaussian":
-                    with torch.no_grad():
-                        _, _, _, mean, std = self.actor.sample(state_batch)
+                with torch.no_grad():
+                    _, log_prob, _, mean, std = self.actor.sample(state_batch)
 
-                    current_distribution = Normal(mean, std)
-                    batch_distribution = Normal(mean_batch, std_batch)
+                current_action_prob = log_prob.exp()
+                action_prob_ratio = current_action_prob / action_prob_batch
 
-                    js_div = (kl_divergence(batch_distribution, current_distribution) + kl_divergence(current_distribution, batch_distribution)) / 2
-                    js_div = torch.mean(torch.exp(-js_div), dim=1).view(-1, 1)
+                current_distribution = Normal(mean, std)
+                batch_distribution = Normal(mean_batch, std_batch)
 
-                    js_weights = js_div
-                else:
-                    js_weights = torch.ones_like(reward_batch)
+                js_div = (kl_divergence(batch_distribution, current_distribution) + kl_divergence(current_distribution, batch_distribution)) / 2
+                js_div = torch.mean(torch.exp(-js_div), dim=1).view(-1, 1)
 
-                    with torch.no_grad():
-                        current_action, _, _, _, _ = self.actor.sample(state_batch)
-
-                    # Compute the difference batch
-                    diff_action_batch = action_batch - current_action
-
-                    # Get the mean and covariance matrix for the
-                    mean = torch.mean(diff_action_batch, dim=0)
-                    cov = torch.mm(torch.transpose(diff_action_batch - mean, 0, 1), diff_action_batch - mean) / batch_size
-
-                    multivar_gaussian = MultivariateNormal(mean, cov)
-
-                    js_div = (kl_divergence(multivar_gaussian, self.ref_gaussian) + kl_divergence(self.ref_gaussian,
-                                                                                                  multivar_gaussian)) / 2
-                    js_div = torch.exp(-js_div)
-
-                    js_weights *= js_div
+                js_weights = torch.min(action_prob_ratio, js_div)
             except:
                 js_weights = torch.ones_like(reward_batch)
         else:

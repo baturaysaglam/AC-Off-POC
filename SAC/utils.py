@@ -35,16 +35,16 @@ class ParameterExperienceReplayBuffer:
         self.buffer = []
         self.ptr = 0
 
-    def add(self, state, action, reward, next_state, done, mean, std):
+    def add(self, state, action, action_prob, reward, next_state, done, mean, std):
         if len(self.buffer) < self.capacity:
             self.buffer.append(None)
-        self.buffer[self.ptr] = (state, action, reward, next_state, done, mean, std)
+        self.buffer[self.ptr] = (state, action, action_prob, reward, next_state, done, mean, std)
         self.ptr = (self.ptr + 1) % self.capacity
 
     def sample(self, batch_size):
         batch = random.sample(self.buffer, batch_size)
-        state, action, reward, next_state, done, mean, std = map(np.stack, zip(*batch))
-        return state, action, reward, next_state, done, mean, std
+        state, action, action_prob, reward, next_state, done, mean, std = map(np.stack, zip(*batch))
+        return state, action, action_prob, reward, next_state, done, mean, std
 
     def __len__(self):
         return len(self.buffer)
