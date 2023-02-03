@@ -38,16 +38,16 @@ def evaluate_policy(agent, env_name, seed, eval_episodes=10):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--policy", default="AC-Off-POC_TD3", help='Algorithm (default: AC-Off-POC_TD3)')
-    parser.add_argument("--env", default="LunarLanderContinuous-v2", help='OpenAI Gym environment name')
+    parser.add_argument("--env", default="Hopper-v2", help='OpenAI Gym environment name')
     parser.add_argument("--seed", default=0, type=int, help='Seed number for PyTorch, NumPy and OpenAI Gym (default: 0)')
     parser.add_argument("--gpu", default="0", type=int, help='GPU ordinal for multi-GPU computers (default: 0)')
-    parser.add_argument("--start_time_steps", default=25000, type=int, metavar='N', help='Number of exploration time steps sampling random actions (default: 1000)')
+    parser.add_argument("--start_time_steps", default=1000, type=int, metavar='N', help='Number of exploration time steps sampling random actions (default: 25000)')
     parser.add_argument("--buffer_size", default=1000000, type=int, help='Size of the experience replay buffer (default: 1000000)')
     parser.add_argument("--eval_freq", default=1e3, metavar='N', help='Evaluation period in number of time steps (default: 1000)')
     parser.add_argument("--max_time_steps", default=1000000, type=int, metavar='N', help='Maximum number of steps (default: 1000000)')
     parser.add_argument("--exploration_noise", default=0.1, metavar='G', help='Std of Gaussian exploration noise')
     parser.add_argument("--batch_size", default=256, metavar='N', help='Batch size (default: 256)')
-    parser.add_argument('--kl_div_var', type=float, default=0.15, help='Diagonal entries of the reference Gaussian for the Deterministic SAC')
+    parser.add_argument('--kl_div_var', default=None, help='Diagonal entries of the reference Gaussian (variance of the exploration noise)')
     parser.add_argument("--discount", default=0.99, metavar='G', help='Discount factor for reward (default: 0.99)')
     parser.add_argument("--tau", default=0.005, type=float, metavar='G', help='Learning rate in soft/hard updates of the target networks (default: 0.005)')
     parser.add_argument("--policy_noise", default=0.2, metavar='G', help='Noise added to target policy during critic update')
@@ -57,8 +57,10 @@ if __name__ == "__main__":
     parser.add_argument("--load_model", default="", help='Model load file name; if empty, does not load')
 
     args = parser.parse_args()
+    args.kl_div_var = args.exploration_noise
 
-    file_name = f"{args.policy}_{args.env}_{args.seed}"
+    # file_name = f"{args.policy}_{args.env}_{args.seed}"
+    file_name = f"{args.policy}_{args.env}_{args.seed}_{args.kl_div_var}"
     print("---------------------------------------")
     print(f"Policy: {args.policy}, Env: {args.env}, Seed: {args.seed}")
     print("---------------------------------------")
@@ -139,10 +141,7 @@ if __name__ == "__main__":
         if t < args.start_time_steps:
             action = env.action_space.sample()
         else:
-            action = (
-                    agent.select_action(np.array(state))
-                    + np.random.normal(0, max_action * args.exploration_noise, size=action_dim)
-            ).clip(-max_action, max_action)
+            action = (agent.select_action(np.array(state)) + np.random.normal(0, max_action * args.exploration_noise, size=action_dim)).clip(-max_action, max_action)
 
         # Perform action
         next_state, reward, done, _ = env.step(action)
