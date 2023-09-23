@@ -6,7 +6,7 @@ Note that the implementation of the [DDPG](https://arxiv.org/abs/1509.02971) and
 The algorithm is tested on [MuJoCo](https://gym.openai.com/envs/#mujoco) and [Box2D](https://gym.openai.com/envs/#box2d) continuous control tasks.
 
 ### Results
-Learning curves are found under [./Learning Curves](https://github.com/baturaysaglam/AC-Off-POC/tree/main/Learning%20Curves).. Corresponding learning figures are found under [./Learning Figures](https://github.com/baturaysaglam/AC-Off-POC/tree/main/Learning%20Figures). Each learning curve is formatted as NumPy arrays of 1001 evaluations (1001,). Each evaluation corresponds to the average reward from running the policy for 10 episodes without exploration and updates. The randomly initialized policy network produces the first evaluation. Evaluations are performed every 1000 time steps, over 1 million time steps for 10 random seeds.
+Each learning curve is formatted as NumPy arrays of 1001 evaluations (1001,). Each evaluation corresponds to the average reward from running the policy for 10 episodes without exploration and updates. The randomly initialized policy network produces the first evaluation. Evaluations are performed every 1000 time steps, over 1 million time steps for 10 random seeds.
 
 ### Computing Infrastructure
 Following computing infrastructure is used to produce the results.
@@ -97,17 +97,3 @@ optional arguments:
   --hidden_size N       Hidden unit size in neural networks (default: 256)
 
   ```
-
-### Bibtex
-```
-@misc{https://doi.org/10.48550/arxiv.2208.00755,
-  doi = {10.48550/ARXIV.2208.00755},
-  url = {https://arxiv.org/abs/2208.00755},
-  author = {Saglam, Baturay and Cicek, Dogan C. and Mutlu, Furkan B. and Kozat, Suleyman S.},
-  keywords = {Machine Learning (cs.LG), Artificial Intelligence (cs.AI), FOS: Computer and information sciences, FOS: Computer and information sciences},
-  title = {Off-Policy Correction for Actor-Critic Methods without Importance Sampling},
-  publisher = {arXiv},
-  year = {2022},
-  copyright = {arXiv.org perpetual, non-exclusive license}
-}
-```
