@@ -1,7 +1,7 @@
 # Off-Policy Correction for Actor-Critic Methods without Importance Sampling
-PyTorch implementation of the _Actor-Critic Off-Policy Correction_ algorithm (AC-Off-POC). If you use our code or data, please cite the [paper](https://arxiv.org/abs/2208.00755).
+PyTorch implementation of the _Actor-Critic Off-Policy Correction_ algorithm (AC-Off-POC) algorithm. If you use our code or data, please cite the [paper](https://arxiv.org/abs/2208.00755).
 
-Note that the implementation of the [DDPG](https://arxiv.org/abs/1509.02971) and [TD3](https://arxiv.org/abs/1802.09477) algorithms are heavily based on the [author's Pytorch implementation of the TD3 algorithm](https://github.com/sfujim/TD3). 
+Note that the implementation of the [DDPG](https://arxiv.org/abs/1509.02971) and [TD3](https://arxiv.org/abs/1802.09477) algorithms are based on the [author's Pytorch implementation of the TD3 algorithm](https://github.com/sfujim/TD3). 
 
 The algorithm is tested on [MuJoCo](https://gym.openai.com/envs/#mujoco) and [Box2D](https://gym.openai.com/envs/#box2d) continuous control tasks.
 
